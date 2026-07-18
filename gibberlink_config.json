@@ -1,0 +1,11 @@
+{
+  "modo": "Comunicación completa",
+  "protocolo": "Audible ultrarrápido (menos fiable)",
+  "volumen": 0.5,
+  "tts_speed": 185,
+  "idioma": "Español (España)",
+  "confirmar": true,
+  "notificaciones": true,
+  "input": "12: Voicemeeter Out B2 (VB-Audio Vo",
+  "output": "22: Voicemeeter Input (VB-Audio Voi"
+}

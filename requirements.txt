@@ -1,0 +1,8 @@
+PySide6>=6.8,<7
+ggwave
+numpy
+sounddevice
+scipy
+SpeechRecognition
+pyttsx3
+pynput
