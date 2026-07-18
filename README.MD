@@ -1,8 +1,8 @@
 ## Install the requirements / Instala los requisitos
 
-\`\`\`bash
+```bash
 python -m pip install -r ./requirements.txt
-\`\`\`
+```
 
 ## Audio setup / Configuración de audio
 
