@@ -189,6 +189,10 @@ class GibberLinkApp(QMainWindow):
         header_row.addWidget(self.crear_selector_modo())
         layout.addLayout(header_row)
 
+        tagline = QLabel("Diseño moderno, controles rápidos y señales acústicas con estilo.")
+        tagline.setObjectName("subtitle")
+        layout.addWidget(tagline)
+
         message_box = QGroupBox("Enviar mensaje directo")
         message_layout = QVBoxLayout(message_box)
         message_layout.addWidget(QLabel("Convierte texto en señal sin usar el micrófono."))
@@ -199,12 +203,16 @@ class GibberLinkApp(QMainWindow):
         send_row.addWidget(self.message_edit, 1)
         self.send_button = QPushButton("Enviar señal  ↗")
         self.send_button.setObjectName("accent")
+        self.send_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.send_button.setMinimumWidth(145)
+        self.send_button.setMinimumHeight(44)
         send_row.addWidget(self.send_button)
         message_layout.addLayout(send_row)
         action_row = QHBoxLayout()
         self.repeat_button = QPushButton("Repetir último")
+        self.repeat_button.setObjectName("secondary")
         self.repeat_button.setEnabled(False)
+        self.repeat_button.setCursor(Qt.CursorShape.PointingHandCursor)
         action_row.addWidget(self.repeat_button)
         action_row.addStretch()
         self.signal_label = QLabel("Señal: esperando un envío")
@@ -380,6 +388,8 @@ class GibberLinkApp(QMainWindow):
         label.setWordWrap(True)
         layout.addWidget(label)
         self.visualizer_placeholder = QPushButton("Cargar visualizador líquido")
+        self.visualizer_placeholder.setObjectName("secondary")
+        self.visualizer_placeholder.setCursor(Qt.CursorShape.PointingHandCursor)
         self.visualizer_placeholder.clicked.connect(self.abrir_visualizador_web)
         layout.addWidget(self.visualizer_placeholder)
         layout.addStretch()
@@ -892,19 +902,21 @@ QPushButton#accent {
 }
 QPushButton#accent:hover { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #ab8eff, stop:0.5 #8c6cff, stop:1 #7350f0); }
 QPushButton:disabled { color: #77748a; background: #2a2833; border-color: #3a3745; }
+QPushButton#secondary { color: #d6d3e0; background: rgba(92,75,255,0.12); border-color: rgba(124,92,255,90); }
+QPushButton#secondary:hover { background: rgba(124,92,255,0.2); }
 
-QFrame#modeSwitch { background: rgba(0,0,0,130); border: 1px solid rgba(124,92,255,60); border-radius: 11px; }
+QFrame#modeSwitch { background: rgba(10, 9, 15, 0.82); border: 1px solid rgba(124,92,255,0.35); border-radius: 13px; }
 QPushButton#modeSeg {
-    background: transparent; border: none; color: #b4b1c2; padding: 7px 14px;
-    font-weight: 700; font-size: 12px; border-radius: 8px;
+    background: transparent; border: none; color: #c5c2d2; padding: 10px 16px;
+    font-weight: 700; font-size: 13px; border-radius: 9px;
 }
 QPushButton#modeSeg:hover { color: #ffffff; }
 QPushButton#modeSeg:checked {
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #9b7bff, stop:1 #6c4bd6);
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #9b7bff, stop:1 #34d399);
     color: #ffffff;
 }
 
-QProgressBar { background: rgba(5,5,10,170); border: 1px solid rgba(255,255,255,20); border-radius: 5px; height: 10px; }
+QProgressBar { background: rgba(10,10,18,190); border: 1px solid rgba(255,255,255,18); border-radius: 6px; height: 12px; }
 QProgressBar::chunk { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #7c5cff, stop:1 #22d3ee); border-radius: 5px; }
 QHeaderView::section { background: rgba(124,92,255,45); color: #eeeeef; border: none; border-bottom: 1px solid rgba(255,255,255,30); padding: 7px; font-weight: 600; }
 QTableWidget { gridline-color: rgba(255,255,255,15); alternate-background-color: rgba(255,255,255,6); }
@@ -918,6 +930,9 @@ QSlider::handle:horizontal { width: 17px; margin: -6px 0; background: #ffffff; b
 QScrollBar:vertical { background: transparent; width: 10px; margin: 0; }
 QScrollBar::handle:vertical { background: rgba(124,92,255,120); border-radius: 5px; min-height: 24px; }
 QScrollBar::handle:vertical:hover { background: rgba(124,92,255,200); }
+
+QLineEdit, QPlainTextEdit, QComboBox, QTableWidget { selection-background-color: rgba(124,92,255,120); }
+
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
 """
 
