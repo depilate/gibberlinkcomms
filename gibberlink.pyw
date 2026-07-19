@@ -87,6 +87,8 @@ class GibberLinkApp(QMainWindow):
     meter_signal = Signal(float)
     notification_signal = Signal(str, str)
     resume_signal = Signal()
+    tx_led_signal = Signal()
+    rx_led_signal = Signal()
     send_finished = Signal()
 
     PROTOCOLOS = {
@@ -193,6 +195,14 @@ class GibberLinkApp(QMainWindow):
         tagline.setObjectName("subtitle")
         layout.addWidget(tagline)
 
+        leds_row = QHBoxLayout()
+        leds_row.addStretch()
+        self.tx_led = self.create_led_indicator("Tx", "txLed")
+        self.rx_led = self.create_led_indicator("Rx", "rxLed")
+        leds_row.addWidget(self.tx_led)
+        leds_row.addWidget(self.rx_led)
+        layout.addLayout(leds_row)
+
         message_box = QGroupBox("Enviar mensaje directo")
         message_layout = QVBoxLayout(message_box)
         message_layout.addWidget(QLabel("Convierte texto en señal sin usar el micrófono."))
@@ -280,6 +290,24 @@ class GibberLinkApp(QMainWindow):
             frame_layout.addWidget(boton)
 
         return frame
+
+    def create_led_indicator(self, text, name):
+        led = QLabel(text)
+        led.setObjectName(name)
+        led.setProperty("active", False)
+        led.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        led.setFixedSize(62, 24)
+        return led
+
+    def blink_led(self, led, duration=600):
+        self.set_led_active(led, True)
+        QTimer.singleShot(duration, lambda: self.set_led_active(led, False))
+
+    def set_led_active(self, led, active):
+        led.setProperty("active", active)
+        led.style().unpolish(led)
+        led.style().polish(led)
+        led.update()
 
     def apply_glass_effects(self):
         """Profundidad suave para simular capas de cristal sobre el fondo oscuro."""
@@ -526,6 +554,8 @@ class GibberLinkApp(QMainWindow):
         self.signal_info.connect(self.update_signal_info)
         self.meter_signal.connect(self.update_meter)
         self.notification_signal.connect(self.mostrar_notificacion)
+        self.tx_led_signal.connect(lambda: self.blink_led(self.tx_led, 650))
+        self.rx_led_signal.connect(lambda: self.blink_led(self.rx_led, 650))
         self.history_table.customContextMenuRequested.connect(self.mostrar_menu_historial)
         self.notification_check.toggled.connect(lambda value: setattr(self, "notificar_cache", value))
         self.resume_signal.connect(lambda: QTimer.singleShot(500, self.iniciar_flujo_recepcion))
@@ -678,6 +708,7 @@ class GibberLinkApp(QMainWindow):
         self.repeat_button.setEnabled(True)
         self.send_button.setEnabled(False)
         self.set_status("ESTADO: ENVIANDO MENSAJE…", "#fbbf24")
+        self.tx_led_signal.emit()
         self.add_history_threadsafe("Enviado", text)
         self.log(f"Enviando mensaje escrito: '{text}'")
         threading.Thread(target=self.enviar_texto_worker, args=(text, self.idx_out_actual, self.modo_cache), daemon=True).start()
@@ -821,6 +852,7 @@ class GibberLinkApp(QMainWindow):
             result = ggwave.decode(self.ggwave_instance, np.ascontiguousarray(indata[:, 0], dtype=np.float32).tobytes())
         if not result:
             return
+        self.rx_led_signal.emit()
         try:
             text = result.decode("utf-8")
             if text.startswith("ACK:"):
@@ -915,6 +947,14 @@ QPushButton#modeSeg:checked {
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #9b7bff, stop:1 #34d399);
     color: #ffffff;
 }
+
+QLabel#txLed, QLabel#rxLed {
+    min-width: 62px; padding: 5px 10px; border-radius: 12px;
+    background: rgba(255,255,255,0.06); color: #c5c2d2; border: 1px solid rgba(255,255,255,18);
+    font-size: 12px; font-weight: 700;
+}
+QLabel#txLed[active="true"] { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #fb7185, stop:1 #f472b6); color: #ffffff; border-color: #fb7185; }
+QLabel#rxLed[active="true"] { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #34d399, stop:1 #22c55e); color: #ffffff; border-color: #34d399; }
 
 QProgressBar { background: rgba(10,10,18,190); border: 1px solid rgba(255,255,255,18); border-radius: 6px; height: 12px; }
 QProgressBar::chunk { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #7c5cff, stop:1 #22d3ee); border-radius: 5px; }
