@@ -1,0 +1,115 @@
+Tutorial rápido
+
+1. Instalación
+   - Abre una terminal en la carpeta del proyecto.
+   - Ejecuta: python -m pip install -r requirements.txt
+
+2. Ejecución
+   - Lanza la aplicación con: python gibberlink.pyw
+   - Si usas Windows, también puedes hacer doble clic en el archivo.
+
+3. Configuración de audio
+   - En la pestaña "Ajustes" selecciona tu dispositivo de entrada (micrófono).
+   - Selecciona el dispositivo de salida (altavoces o ruta virtual de audio).
+   - Ajusta el volumen y la velocidad del texto a voz.
+
+4. Modos de operación
+   - "Transmisión" (Tx): envía señales acústicas, no recibe.
+   - "Recepción" (Rx): el receptor se activa para escuchar mensajes entrantes.
+   - "Comunicación completa" (Tx/Rx): permite enviar y recibir.
+
+5. Envío de mensajes
+   - Escribe texto en el cuadro principal.
+   - Pulsa "Enviar señal" o usa Ctrl + Intro.
+   - El LED Tx se ilumina brevemente al transmitir.
+
+6. Recepción de mensajes
+   - Coloca el modo en "Recepción" o "Comunicación completa".
+   - El LED Rx se ilumina cuando se recibe un mensaje.
+   - El historial guardará los mensajes recibidos y enviados.
+
+7. Controles rápidos
+   - Ctrl + R: repetir el último mensaje.
+   - Ctrl + D: abrir la pestaña Diagnóstico.
+   - Ctrl + M: cambiar entre Transmisión y Recepción.
+
+8. Diagnóstico
+   - En la pestaña "Diagnóstico" verás el nivel de entrada en tiempo real.
+   - Úsalo para comprobar si tu micrófono entra correctamente.
+
+9. Notificaciones
+   - Activa o desactiva las notificaciones en bandeja desde "Ajustes".
+   - Si está activado, recibirás avisos al llegar un nuevo mensaje.
+
+10. Consejos útiles
+   - Usa plantillas o frases cortas para mejorar la fiabilidad.
+   - Evita mensajes demasiado largos: el límite es 140 bytes en UTF-8.
+   - Si hay mucho ruido, baja el volumen o prueba otro micrófono.
+
+11. Problemas comunes
+   - Si no aparece ningún dispositivo de audio, comprueba que tus drivers estén instalados.
+   - Si no se decodifica el mensaje, intenta mover el micrófono o ajustar el volumen.
+
+12. Guardar preferencias
+   - La aplicación guarda el modo, el protocolo, el idioma y los dispositivos utilizados.
+   - Al reiniciar, restaurará esas preferencias automáticamente.
+
+
+---
+
+Quick Tutorial
+
+1. Installation
+   - Open a terminal in the project folder.
+   - Run: python -m pip install -r requirements.txt
+
+2. Launching
+   - Start the app with: python gibberlink.pyw
+   - On Windows, you can also double-click the file.
+
+3. Audio setup
+   - In the "Settings" tab, select your input device (microphone).
+   - Select your output device (speakers or virtual audio route).
+   - Adjust volume and text-to-speech speed.
+
+4. Operation modes
+   - "Transmission" (Tx): sends acoustic signals, does not receive.
+   - "Reception" (Rx): the receiver listens for incoming messages.
+   - "Full communication" (Tx/Rx): allows sending and receiving.
+
+5. Sending messages
+   - Type text into the main box.
+   - Click "Send signal" or use Ctrl + Enter.
+   - The Tx LED lights briefly during transmission.
+
+6. Receiving messages
+   - Set mode to "Reception" or "Full communication."
+   - The Rx LED lights when a message is received.
+   - The history log saves received and sent messages.
+
+7. Quick controls
+   - Ctrl + R: repeat last message.
+   - Ctrl + D: open the Diagnostics tab.
+   - Ctrl + M: switch between Transmission and Reception.
+
+8. Diagnostics
+   - In the "Diagnostics" tab, you will see real-time input level.
+   - Use it to verify your microphone input is working properly.
+
+9. Notifications
+   - Enable or disable tray notifications in "Settings."
+   - If enabled, you will receive alerts when a new message arrives.
+
+10. Useful tips
+   - Use templates or short phrases for better reliability.
+   - Avoid overly long messages: the limit is 140 UTF-8 bytes.
+   - If there is too much noise, lower the volume or try another microphone.
+
+11. Common issues
+   - If no audio device appears, make sure your drivers are installed.
+   - If the message does not decode, try moving the microphone or adjusting volume.
+
+12. Save preferences
+   - The app saves the selected mode, protocol, language, and devices.
+   - On restart, it restores those preferences automatically.
+
