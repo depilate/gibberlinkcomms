@@ -87,8 +87,6 @@ class GibberLinkApp(QMainWindow):
     meter_signal = Signal(float)
     notification_signal = Signal(str, str)
     resume_signal = Signal()
-    tx_led_signal = Signal()
-    rx_led_signal = Signal()
     send_finished = Signal()
 
     PROTOCOLOS = {
@@ -191,18 +189,6 @@ class GibberLinkApp(QMainWindow):
         header_row.addWidget(self.crear_selector_modo())
         layout.addLayout(header_row)
 
-        tagline = QLabel("Diseño moderno, controles rápidos y señales acústicas con estilo.")
-        tagline.setObjectName("subtitle")
-        layout.addWidget(tagline)
-
-        leds_row = QHBoxLayout()
-        leds_row.addStretch()
-        self.tx_led = self.create_led_indicator("Tx", "txLed")
-        self.rx_led = self.create_led_indicator("Rx", "rxLed")
-        leds_row.addWidget(self.tx_led)
-        leds_row.addWidget(self.rx_led)
-        layout.addLayout(leds_row)
-
         message_box = QGroupBox("Enviar mensaje directo")
         message_layout = QVBoxLayout(message_box)
         message_layout.addWidget(QLabel("Convierte texto en señal sin usar el micrófono."))
@@ -213,16 +199,12 @@ class GibberLinkApp(QMainWindow):
         send_row.addWidget(self.message_edit, 1)
         self.send_button = QPushButton("Enviar señal  ↗")
         self.send_button.setObjectName("accent")
-        self.send_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.send_button.setMinimumWidth(145)
-        self.send_button.setMinimumHeight(44)
         send_row.addWidget(self.send_button)
         message_layout.addLayout(send_row)
         action_row = QHBoxLayout()
         self.repeat_button = QPushButton("Repetir último")
-        self.repeat_button.setObjectName("secondary")
         self.repeat_button.setEnabled(False)
-        self.repeat_button.setCursor(Qt.CursorShape.PointingHandCursor)
         action_row.addWidget(self.repeat_button)
         action_row.addStretch()
         self.signal_label = QLabel("Señal: esperando un envío")
@@ -290,24 +272,6 @@ class GibberLinkApp(QMainWindow):
             frame_layout.addWidget(boton)
 
         return frame
-
-    def create_led_indicator(self, text, name):
-        led = QLabel(text)
-        led.setObjectName(name)
-        led.setProperty("active", False)
-        led.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        led.setFixedSize(62, 24)
-        return led
-
-    def blink_led(self, led, duration=600):
-        self.set_led_active(led, True)
-        QTimer.singleShot(duration, lambda: self.set_led_active(led, False))
-
-    def set_led_active(self, led, active):
-        led.setProperty("active", active)
-        led.style().unpolish(led)
-        led.style().polish(led)
-        led.update()
 
     def apply_glass_effects(self):
         """Profundidad suave para simular capas de cristal sobre el fondo oscuro."""
@@ -416,8 +380,6 @@ class GibberLinkApp(QMainWindow):
         label.setWordWrap(True)
         layout.addWidget(label)
         self.visualizer_placeholder = QPushButton("Cargar visualizador líquido")
-        self.visualizer_placeholder.setObjectName("secondary")
-        self.visualizer_placeholder.setCursor(Qt.CursorShape.PointingHandCursor)
         self.visualizer_placeholder.clicked.connect(self.abrir_visualizador_web)
         layout.addWidget(self.visualizer_placeholder)
         layout.addStretch()
@@ -554,8 +516,6 @@ class GibberLinkApp(QMainWindow):
         self.signal_info.connect(self.update_signal_info)
         self.meter_signal.connect(self.update_meter)
         self.notification_signal.connect(self.mostrar_notificacion)
-        self.tx_led_signal.connect(lambda: self.blink_led(self.tx_led, 650))
-        self.rx_led_signal.connect(lambda: self.blink_led(self.rx_led, 650))
         self.history_table.customContextMenuRequested.connect(self.mostrar_menu_historial)
         self.notification_check.toggled.connect(lambda value: setattr(self, "notificar_cache", value))
         self.resume_signal.connect(lambda: QTimer.singleShot(500, self.iniciar_flujo_recepcion))
@@ -708,7 +668,6 @@ class GibberLinkApp(QMainWindow):
         self.repeat_button.setEnabled(True)
         self.send_button.setEnabled(False)
         self.set_status("ESTADO: ENVIANDO MENSAJE…", "#fbbf24")
-        self.tx_led_signal.emit()
         self.add_history_threadsafe("Enviado", text)
         self.log(f"Enviando mensaje escrito: '{text}'")
         threading.Thread(target=self.enviar_texto_worker, args=(text, self.idx_out_actual, self.modo_cache), daemon=True).start()
@@ -781,19 +740,45 @@ class GibberLinkApp(QMainWindow):
             self.is_ptt_pressed = False
             self.set_status("ESTADO: PROCESANDO VOZ…", "#fbbf24")
 
+    def _abrir_input_stream_compatible(self, callback):
+        """Algunos dispositivos/drivers (sobre todo en Windows) rechazan
+        una frecuencia de muestreo arbitraria (p.ej. 16000 Hz fijo) con
+        'Invalid sample rate'. Probamos primero la frecuencia nativa del
+        propio micrófono y, si aun así falla, unas cuantas habituales."""
+        candidatos = []
+        try:
+            candidatos.append(int(sd.query_devices(self.idx_in_actual)["default_samplerate"]))
+        except Exception:
+            pass
+        for extra in (48000, 44100, 16000):
+            if extra not in candidatos:
+                candidatos.append(extra)
+
+        ultimo_error = None
+        for fs in candidatos:
+            try:
+                stream = sd.InputStream(samplerate=fs, channels=1, device=self.idx_in_actual, callback=callback)
+                return stream, fs
+            except Exception as error:
+                ultimo_error = error
+        raise ultimo_error
+
     def comenzar_grabacion_ptt(self):
         if self.idx_in_actual is None or self.idx_out_actual is None:
             self.log("No hay dispositivos de entrada/salida seleccionados.")
             return
         captured = []
         try:
-            with sd.InputStream(samplerate=16000, channels=1, device=self.idx_in_actual, callback=lambda data, *_: captured.append(data.copy()) if self.is_ptt_pressed else None):
+            stream, fs = self._abrir_input_stream_compatible(
+                lambda data, *_: captured.append(data.copy()) if self.is_ptt_pressed else None
+            )
+            with stream:
                 while self.is_ptt_pressed:
                     sd.sleep(40)
             if not captured:
                 return
             stream = io.BytesIO()
-            wav.write(stream, 16000, (np.concatenate(captured) * 32767).astype(np.int16))
+            wav.write(stream, fs, (np.concatenate(captured) * 32767).astype(np.int16))
             stream.seek(0)
             with sr.AudioFile(stream) as source:
                 text = self.recognizer.recognize_google(self.recognizer.record(source), language=self.IDIOMAS.get(self.idioma_cache, "es-ES"))
@@ -852,7 +837,6 @@ class GibberLinkApp(QMainWindow):
             result = ggwave.decode(self.ggwave_instance, np.ascontiguousarray(indata[:, 0], dtype=np.float32).tobytes())
         if not result:
             return
-        self.rx_led_signal.emit()
         try:
             text = result.decode("utf-8")
             if text.startswith("ACK:"):
@@ -934,29 +918,19 @@ QPushButton#accent {
 }
 QPushButton#accent:hover { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #ab8eff, stop:0.5 #8c6cff, stop:1 #7350f0); }
 QPushButton:disabled { color: #77748a; background: #2a2833; border-color: #3a3745; }
-QPushButton#secondary { color: #d6d3e0; background: rgba(92,75,255,0.12); border-color: rgba(124,92,255,90); }
-QPushButton#secondary:hover { background: rgba(124,92,255,0.2); }
 
-QFrame#modeSwitch { background: rgba(10, 9, 15, 0.82); border: 1px solid rgba(124,92,255,0.35); border-radius: 13px; }
+QFrame#modeSwitch { background: rgba(0,0,0,130); border: 1px solid rgba(124,92,255,60); border-radius: 11px; }
 QPushButton#modeSeg {
-    background: transparent; border: none; color: #c5c2d2; padding: 10px 16px;
-    font-weight: 700; font-size: 13px; border-radius: 9px;
+    background: transparent; border: none; color: #b4b1c2; padding: 7px 14px;
+    font-weight: 700; font-size: 12px; border-radius: 8px;
 }
 QPushButton#modeSeg:hover { color: #ffffff; }
 QPushButton#modeSeg:checked {
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #9b7bff, stop:1 #34d399);
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #9b7bff, stop:1 #6c4bd6);
     color: #ffffff;
 }
 
-QLabel#txLed, QLabel#rxLed {
-    min-width: 62px; padding: 5px 10px; border-radius: 12px;
-    background: rgba(255,255,255,0.06); color: #c5c2d2; border: 1px solid rgba(255,255,255,18);
-    font-size: 12px; font-weight: 700;
-}
-QLabel#txLed[active="true"] { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #fb7185, stop:1 #f472b6); color: #ffffff; border-color: #fb7185; }
-QLabel#rxLed[active="true"] { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #34d399, stop:1 #22c55e); color: #ffffff; border-color: #34d399; }
-
-QProgressBar { background: rgba(10,10,18,190); border: 1px solid rgba(255,255,255,18); border-radius: 6px; height: 12px; }
+QProgressBar { background: rgba(5,5,10,170); border: 1px solid rgba(255,255,255,20); border-radius: 5px; height: 10px; }
 QProgressBar::chunk { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #7c5cff, stop:1 #22d3ee); border-radius: 5px; }
 QHeaderView::section { background: rgba(124,92,255,45); color: #eeeeef; border: none; border-bottom: 1px solid rgba(255,255,255,30); padding: 7px; font-weight: 600; }
 QTableWidget { gridline-color: rgba(255,255,255,15); alternate-background-color: rgba(255,255,255,6); }
@@ -970,9 +944,6 @@ QSlider::handle:horizontal { width: 17px; margin: -6px 0; background: #ffffff; b
 QScrollBar:vertical { background: transparent; width: 10px; margin: 0; }
 QScrollBar::handle:vertical { background: rgba(124,92,255,120); border-radius: 5px; min-height: 24px; }
 QScrollBar::handle:vertical:hover { background: rgba(124,92,255,200); }
-
-QLineEdit, QPlainTextEdit, QComboBox, QTableWidget { selection-background-color: rgba(124,92,255,120); }
-
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
 """
 
